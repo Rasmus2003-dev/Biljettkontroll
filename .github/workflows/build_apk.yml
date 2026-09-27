@@ -5,11 +5,13 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Release APK
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,6 +26,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true
 
       - name: Get Flutter dependencies
         run: flutter pub get
@@ -36,3 +39,23 @@ jobs:
         with:
           name: kalle-vasttrafik-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Create Release with APK
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master')
+        with:
+          tag_name: v1.0.0-apk
+          name: "Kålle Västtrafik Android APK v1.0.0"
+          body: |
+            ### Kålle - Västtrafik Biljettkontroll Handterminal (Android Release APK)
+            
+            Denna APK är byggd automatiskt via GitHub Actions och stöder:
+            - **Äkta NFC-kortläsning (Mifare Classic 1K / RKF standard)** precis som i ResSaldo
+            - **Visering & BoB / Aztec 2D streckkoder**
+            - **Kortdumpar, Reskassa & Sektoranalys**
+            
+            Ladda ner filen `app-release.apk` nedan och installera direkt på din Android-telefon!
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
